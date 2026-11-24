@@ -3,9 +3,8 @@ name: MineTrack iOS
 on:
   workflow_dispatch:
   push:
-    paths:
-      - 'ios/**'
-      - '.github/workflows/ios-build.yml'
+    branches:
+      - ios-build
 
 permissions:
   contents: read
