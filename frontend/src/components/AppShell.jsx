@@ -47,7 +47,7 @@ export default function AppShell({ roleLabel, links, dock = [], fab, flushPaths 
 
   const footer = (
     <div className="mt-side__foot">
-      <LanguageSwitcher style={{ width: '100%' }} />
+      <LanguageSwitcher variant="block" />
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0 0.25rem' }}>
         <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#FFF1E6', color: 'var(--color-ore-dark)', display: 'grid', placeItems: 'center', fontWeight: 600, flexShrink: 0 }}>
           {(user?.name || roleLabel || 'M').slice(0, 1).toUpperCase()}

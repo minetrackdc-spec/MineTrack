@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ChevronDown, Loader2, WifiOff } from 'lucide-react';
+import { Loader2, WifiOff } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { ensureLocaleLoaded } from '../i18n';
+import LanguageSwitcher from '../components/LanguageSwitcher';
 
 // Raccourcis de rôle : ils pré-remplissent seulement l'EMAIL du compte.
 // Aucun mot de passe n'est embarqué dans la page (audit : avant, n'importe
@@ -24,15 +24,6 @@ const SIGNUP_ROLES = [
   { key: 'support', labelKey: 'user.role_support' },
   { key: 'supervisor', labelKey: 'user.role_supervisor' },
   { key: 'management', labelKey: 'user.role_management' },
-];
-
-const LANGUAGES = [
-  { code: 'fr', label: 'Français' },
-  { code: 'sw', label: 'Kiswahili' },
-  { code: 'ln', label: 'Lingala' },
-  { code: 'kg', label: 'Kikongo' },
-  { code: 'lu', label: 'Tshiluba' },
-  { code: 'en', label: 'English' },
 ];
 
 // Rôles backend actuels : admin | management | supervisor | logistique | support
@@ -62,12 +53,8 @@ font-family:'Inter',system-ui,sans-serif}
 .login__visual{position:relative;
 background:radial-gradient(90% 70% at 15% 10%,rgba(255,178,120,.55),transparent 70%),
 linear-gradient(160deg,rgba(255,227,204,.88),rgba(255,241,226,.86) 40%,rgba(242,243,245,.94) 85%),url('/login-bg.png') center/cover no-repeat}
-.login__lang{position:absolute;top:2.5rem;left:2.5rem;display:flex;align-items:center;gap:.75rem;
-background:#FFFFFF;border-radius:9999px;padding:.25rem 1rem .25rem .5rem;color:#111214;box-shadow:0 6px 20px rgba(17,18,20,.08)}
-.login__lang select{appearance:none;border:0;background:transparent;font-size:1.5rem;color:inherit;
-padding:.4rem .6rem;cursor:pointer;min-width:14rem}
-.login__lang select:focus-visible{outline:2px solid var(--ore);outline-offset:3px}
-.login__panel{display:flex;align-items:center;justify-content:center;padding:3rem 2rem}
+.login__panel{position:relative;display:flex;align-items:center;justify-content:center;padding:4.5rem 2rem 3rem}
+.login__langpos{position:absolute;top:1.25rem;right:1.25rem;z-index:2}
 .login__card{width:min(28rem,100%);background:var(--panel);border-radius:24px;padding:2rem;box-shadow:0 1px 2px rgba(17,18,20,.04),0 12px 32px rgba(17,18,20,.06)}
 .login__brand{display:flex;flex-direction:column;align-items:center;gap:.4rem;margin-bottom:1.5rem;text-align:center}
 .login__logo{width:min(13rem,70%);height:auto}
@@ -102,12 +89,12 @@ box-shadow:0 6px 16px rgba(238, 155, 95,.22);cursor:pointer;transition:filter .1
 .login__spin{animation:login-spin .9s linear infinite}
 @keyframes login-spin{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.login__spin{animation:none}}
-@media (max-width:900px){.login{grid-template-columns:1fr}.login__visual{min-height:14rem}
-.login__lang{top:1.25rem;left:1.25rem}.login__lang select{font-size:1.05rem;min-width:10rem}}
+@media (max-width:900px){.login{grid-template-columns:1fr}.login__visual{min-height:9rem}
+.login__panel{padding:4rem 1rem 2rem}.login__langpos{top:1rem;right:1rem}}
 `;
 
 export default function LoginPage() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { login, register } = useAuth();
 
@@ -131,12 +118,6 @@ export default function LoginPage() {
       window.removeEventListener('offline', down);
     };
   }, []);
-
-  const changeLanguage = async (code) => {
-    await ensureLocaleLoaded(code);
-    i18n.changeLanguage(code);
-    try { localStorage.setItem('i18nextLng', code); } catch { /* storage unavailable */ }
-  };
 
   const pickRole = (roleKey) => {
     setRole(roleKey);
@@ -203,17 +184,10 @@ export default function LoginPage() {
     <div className="login">
       <style>{CSS}</style>
 
-      <section className="login__visual">
-        <div className="login__lang">
-          <select aria-label={t('login.choose_language')} value={(i18n.language || 'fr').slice(0, 2)}
-            onChange={(e) => changeLanguage(e.target.value)}>
-            {LANGUAGES.map((l) => <option key={l.code} value={l.code}>{l.label}</option>)}
-          </select>
-          <ChevronDown size={22} aria-hidden="true" />
-        </div>
-      </section>
+      <section className="login__visual" aria-hidden="true" />
 
       <section className="login__panel">
+        <LanguageSwitcher className="login__langpos" />
         <div className="login__card">
           <header className="login__brand">
             <img src="/logo-full.png" alt="MineTrack" className="login__logo" width="412" height="337" />

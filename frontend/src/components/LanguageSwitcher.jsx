@@ -1,43 +1,48 @@
 import { useTranslation } from 'react-i18next';
+import { Globe, ChevronDown } from 'lucide-react';
 import { ensureLocaleLoaded } from '../i18n';
 
+// Meme liste et meme ordre partout (connexion, barre laterale, menu mobile).
 const LANGUAGES = [
   { code: 'fr', label: 'Français' },
   { code: 'en', label: 'English' },
   { code: 'sw', label: 'Kiswahili' },
   { code: 'ln', label: 'Lingala' },
-  { code: 'lu', label: 'Tshiluba' },
   { code: 'kg', label: 'Kikongo' },
+  { code: 'lu', label: 'Tshiluba' },
 ];
 
-/** Sélecteur de langue réutilisable — change i18n.language partout dans l'app. */
-export default function LanguageSwitcher({ style }) {
-  const { i18n } = useTranslation();
+/**
+ * Bulle de changement de langue.
+ * Toute la bulle est cliquable : un <select> natif transparent la recouvre,
+ * ce qui ouvre la liste systeme (pratique au doigt sur telephone) et reste
+ * accessible au clavier et aux lecteurs d'ecran.
+ *
+ * variant="block" : pleine largeur (barre laterale, menu mobile).
+ */
+export default function LanguageSwitcher({ variant, className = '', style }) {
+  const { t, i18n } = useTranslation();
+  const code = (i18n.language || i18n.resolvedLanguage || 'fr').slice(0, 2);
+  const current = LANGUAGES.find((l) => l.code === code) || LANGUAGES[0];
 
-  const changeLanguage = async (code) => {
-    await ensureLocaleLoaded(code);
-    i18n.changeLanguage(code);
-    try { localStorage.setItem('i18nextLng', code); } catch { /* storage unavailable */ }
+  const changeLanguage = async (next) => {
+    await ensureLocaleLoaded(next);
+    i18n.changeLanguage(next);
+    try { localStorage.setItem('i18nextLng', next); } catch { /* stockage indisponible */ }
   };
 
   return (
-    <select
-      aria-label="Choisir la langue / Choose language"
-      value={(i18n.language || i18n.resolvedLanguage || 'fr').slice(0, 2)}
-      onChange={(e) => changeLanguage(e.target.value)}
-      style={{
-        background: 'var(--color-rock-2, #F7F8FA)',
-        color: 'var(--color-chalk, #f3ede7)',
-        border: '1px solid var(--color-rock-3, #2a2724)',
-        padding: '0.4rem 0.8rem',
-        borderRadius: 'var(--radius-md, 7px)',
-        fontSize: '0.85rem',
-        cursor: 'pointer',
-        outline: 'none',
-        ...style,
-      }}
-    >
-      {LANGUAGES.map((l) => <option key={l.code} value={l.code}>{l.label}</option>)}
-    </select>
+    <label className={`lang-bubble${variant === 'block' ? ' lang-bubble--block' : ''} ${className}`.trim()} style={style}>
+      <Globe size={17} strokeWidth={1.8} aria-hidden="true" />
+      <span className="lang-bubble__label">{current.label}</span>
+      <ChevronDown size={16} strokeWidth={2} aria-hidden="true" className="lang-bubble__chev" />
+      <select
+        aria-label={t('login.choose_language')}
+        value={current.code}
+        onChange={(e) => changeLanguage(e.target.value)}
+      >
+        {LANGUAGES.map((l) => <option key={l.code} value={l.code}>{l.label}</option>)}
+      </select>
+    </label>
   );
 }
