@@ -12,7 +12,7 @@ permissions:
 jobs:
   upload:
     if: github.repository == 'minetrackdc-spec/MineTrack'
-    runs-on: macos-26
+    runs-on: macos-26-intel
     timeout-minutes: 30
     defaults:
       run:
