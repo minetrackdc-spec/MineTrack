@@ -13,6 +13,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.minetrackdc.minetrack
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_CFBundleDisplayName: MineTrack
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_NSCameraUsageDescription: "Autoriser la prise de photos dans MineTrack."
         INFOPLIST_KEY_NSLocationWhenInUseUsageDescription: "Utiliser votre position dans MineTrack."

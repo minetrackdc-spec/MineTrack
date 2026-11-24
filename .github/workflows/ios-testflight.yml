@@ -1,0 +1,68 @@
+name: MineTrack TestFlight
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'ios-testflight-*'
+
+permissions:
+  contents: read
+
+jobs:
+  upload:
+    if: github.repository == 'minetrackdc-spec/MineTrack'
+    runs-on: macos-26
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: ios
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate Xcode project
+        run: |
+          xcodebuild -version
+          brew install xcodegen
+          xcodegen generate
+      - name: Archive and upload to TestFlight
+        env:
+          APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          : "${APPLE_TEAM_ID:?Set the APPLE_TEAM_ID repository variable}"
+          : "${ASC_KEY_ID:?Set the ASC_KEY_ID repository secret}"
+          : "${ASC_ISSUER_ID:?Set the ASC_ISSUER_ID repository secret}"
+          : "${ASC_PRIVATE_KEY:?Set the ASC_PRIVATE_KEY repository secret}"
+          umask 077
+          signing_dir="$(mktemp -d)"
+          trap 'rm -rf -- "$signing_dir"' EXIT
+          key_path="$signing_dir/AuthKey.p8"
+          printf '%s\n' "$ASC_PRIVATE_KEY" > "$key_path"
+          unset ASC_PRIVATE_KEY
+
+          auth_args=(
+            -allowProvisioningUpdates
+            -authenticationKeyPath "$key_path"
+            -authenticationKeyID "$ASC_KEY_ID"
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+          )
+          xcodebuild -project MineTrack.xcodeproj -scheme MineTrack \
+            -configuration Release -destination 'generic/platform=iOS' \
+            -archivePath "$signing_dir/MineTrack.xcarchive" \
+            "DEVELOPMENT_TEAM=$APPLE_TEAM_ID" CODE_SIGN_STYLE=Automatic \
+            "CURRENT_PROJECT_VERSION=$GITHUB_RUN_NUMBER.$GITHUB_RUN_ATTEMPT" \
+            "${auth_args[@]}" archive
+
+          export_options="$signing_dir/ExportOptions.plist"
+          plutil -create xml1 "$export_options"
+          plutil -insert method -string app-store-connect "$export_options"
+          plutil -insert destination -string upload "$export_options"
+          plutil -insert signingStyle -string automatic "$export_options"
+          plutil -insert teamID -string "$APPLE_TEAM_ID" "$export_options"
+          plutil -insert manageAppVersionAndBuildNumber -bool NO "$export_options"
+          xcodebuild -exportArchive -archivePath "$signing_dir/MineTrack.xcarchive" \
+            -exportOptionsPlist "$export_options" -exportPath "$signing_dir/export" \
+            "${auth_args[@]}"
