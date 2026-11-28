@@ -45,6 +45,8 @@
     "role_support": "Technical Support",
     "email": "Email",
     "password": "Password",
+    "show_password": "Show password",
+    "hide_password": "Hide password",
     "submit": "Sign in",
     "submitting": "Signing in…",
     "show_password": "Show",

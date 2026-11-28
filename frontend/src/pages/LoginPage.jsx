@@ -1,9 +1,26 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Loader2, WifiOff } from 'lucide-react';
+import { Eye, EyeOff, Loader2, WifiOff } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import LanguageSwitcher from '../components/LanguageSwitcher';
+
+function PasswordField({ id, ...props }) {
+  const { t } = useTranslation();
+  const [visible, setVisible] = useState(false);
+  const Icon = visible ? EyeOff : Eye;
+
+  return (
+    <div className="login__password">
+      <input {...props} id={id} type={visible ? 'text' : 'password'} />
+      <button type="button" aria-controls={id}
+        aria-label={t(visible ? 'login.hide_password' : 'login.show_password')}
+        onClick={() => setVisible(!visible)}>
+        <Icon size={19} aria-hidden="true" />
+      </button>
+    </div>
+  );
+}
 
 // Raccourcis de rôle : ils pré-remplissent seulement l'EMAIL du compte.
 // Aucun mot de passe n'est embarqué dans la page (audit : avant, n'importe
@@ -84,6 +101,12 @@ box-shadow:0 6px 16px rgba(238, 155, 95,.22);cursor:pointer;transition:filter .1
 .login__form label{font-size:.8rem;color:var(--muted);margin-top:.35rem}
 .login__form input{width:100%;padding:.75rem .9rem;border:1px solid transparent;border-radius:12px;background:#F7F8FA;color:var(--txt);font:inherit;font-size:.95rem;outline:none}
 .login__form input:focus{background:#fff;border-color:var(--ore);box-shadow:0 0 0 3px rgba(238,155,95,.2)}
+.login__password{position:relative}
+.login__password input{padding-inline-end:3rem}
+.login__password input::-ms-reveal{display:none}
+.login__password button{position:absolute;inset-block:0;inset-inline-end:0;width:44px;display:grid;place-items:center;border:0;border-radius:12px;background:transparent;color:var(--muted);cursor:pointer}
+.login__password button:hover{color:var(--txt)}
+.login__password button:focus-visible{outline:2px solid var(--ore);outline-offset:-2px}
 .login__form .login__role{margin-top:.9rem}
 .login__error{margin:1rem 0 0;font-size:.82rem;color:#DC2626;display:flex;align-items:center;gap:.4rem}
 .login__spin{animation:login-spin .9s linear infinite}
@@ -223,7 +246,7 @@ export default function LoginPage() {
                 <input id="login-email" type="email" autoComplete="username" required value={email}
                   onChange={(e) => { setEmail(e.target.value); setRole(null); }} />
                 <label htmlFor="login-password">{t('login.password')}</label>
-                <input id="login-password" type="password" autoComplete="current-password" required value={password}
+                <PasswordField id="login-password" autoComplete="current-password" required value={password}
                   onChange={(e) => setPassword(e.target.value)} />
                 <button type="submit" className="login__role" disabled={busy || !online}>
                   {busy && <Loader2 size={18} className="login__spin" />} {busy ? t('login.submitting') : t('login.submit')}
@@ -246,10 +269,10 @@ export default function LoginPage() {
                 {SIGNUP_ROLES.map((r) => <option key={r.key} value={r.key}>{t(r.labelKey)}</option>)}
               </select>
               <label htmlFor="su-pass">{t('app.password_min')}</label>
-              <input id="su-pass" type="password" required minLength={8} autoComplete="new-password" value={signup.password}
+              <PasswordField id="su-pass" required minLength={8} autoComplete="new-password" value={signup.password}
                 onChange={(e) => setSignup({ ...signup, password: e.target.value })} />
               <label htmlFor="su-confirm">{t('app.password_confirm')}</label>
-              <input id="su-confirm" type="password" required minLength={8} autoComplete="new-password" value={signup.confirm}
+              <PasswordField id="su-confirm" required minLength={8} autoComplete="new-password" value={signup.confirm}
                 onChange={(e) => setSignup({ ...signup, confirm: e.target.value })} />
               <button type="submit" className="login__role" disabled={busy || !online}>
                 {busy && <Loader2 size={18} className="login__spin" />} {t('app.signup_submit')}
