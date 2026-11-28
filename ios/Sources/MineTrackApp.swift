@@ -36,7 +36,7 @@ struct MineTrackView: View {
 }
 
 private struct MineTrackWebView: UIViewRepresentable {
-    static let home = URL(string: "https://minetrack-eta.vercel.app/")!
+    static let home = URL(string: "https://project-encua.vercel.app/")!
     let onFailure: () -> Void
 
     func makeCoordinator() -> Coordinator {
