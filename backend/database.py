@@ -59,7 +59,10 @@ def _pg_connect():
     if sslmode == "disable" and not os.environ.get("VERCEL") and os.environ.get("MINETRACK_ENV") != "production":
         ssl_ctx = False
     else:
-        ssl_ctx = ssl.create_default_context(cafile=os.environ.get("MINETRACK_DB_CA_FILE"))
+        ca_file = os.environ.get("MINETRACK_DB_CA_FILE")
+        ssl_ctx = ssl.create_default_context(cafile=ca_file)
+        if not ca_file and (u.hostname or "").endswith(".pooler.supabase.com"):
+            ssl_ctx.load_verify_locations(cafile=ROOT_DIR / "supabase-ca.crt")
     return pg8000.dbapi.connect(
         user=unquote(u.username or "postgres"),
         password=unquote(u.password or ""),
