@@ -625,8 +625,9 @@ async def login(user_input: UserLogin, request: Request, response: Response):
     email = user_input.email.lower().strip()
     if len(email) > 254:
         raise HTTPException(status_code=401, detail="Invalid credentials")
-    ip_bucket = f"login-ip:{_client_ip(request)}"
-    account_bucket = f"login-account:{email}"
+    client_ip = _client_ip(request)
+    ip_bucket = f"login-ip:{client_ip}"
+    account_bucket = f"login-source-account:{client_ip}:{email}"
     if not await _consume_auth_quota(ip_bucket, 60, LOGIN_WINDOW_SECONDS) or not await _consume_auth_quota(
         account_bucket, LOGIN_MAX_FAILURES, LOGIN_WINDOW_SECONDS
     ):
@@ -765,7 +766,13 @@ DASHBOARD_READERS = require_role("admin", "supervisor", "management")
 
 @app.get("/api/health")
 async def health():
-    """Etat du service, sans donnee sensible : indique le type de base utilise."""
+    """Vérifie la disponibilité de la base sans divulguer les erreurs internes."""
+    try:
+        async with database.connect() as db:
+            async with db.execute("SELECT 1") as cur:
+                await cur.fetchone()
+    except Exception as error:
+        raise HTTPException(status_code=503, detail="Base de données indisponible") from error
     return {"status": "ok", "database": "postgres" if database.IS_POSTGRES else "sqlite"}
 
 
@@ -1098,9 +1105,15 @@ async def review_hse(item_id: str, body: HSEReview, current_user: dict = Depends
     if body.decision not in ("approved", "rejected"):
         raise HTTPException(status_code=422, detail="Décision invalide")
     async with database.connect() as db:
-        async with db.execute("SELECT 1 FROM hse_checklists WHERE id=?", (item_id,)) as cur:
-            if not await cur.fetchone():
-                raise HTTPException(status_code=404, detail="Déclaration introuvable")
+        async with db.execute("SELECT created_by FROM hse_checklists WHERE id=?", (item_id,)) as cur:
+            author = await cur.fetchone()
+        if author is None:
+            raise HTTPException(status_code=404, detail="Déclaration introuvable")
+        if body.decision == "approved":
+            if not author[0]:
+                raise HTTPException(status_code=409, detail="Le déclarant doit être identifié avant validation")
+            if author[0].strip().lower() == current_user["email"].strip().lower():
+                raise HTTPException(status_code=403, detail="Un autre responsable doit valider cette déclaration")
         await db.execute(
             "UPDATE hse_checklists SET status=?, reviewed_by=?, reviewed_at=? WHERE id=?",
             (body.decision, current_user.get("email"), datetime.now(timezone.utc).isoformat(), item_id),
